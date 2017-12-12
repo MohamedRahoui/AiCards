@@ -1,0 +1,191 @@
+@import url('https://fonts.googleapis.com/css?family=Lato');
+
+* {
+  font-family: Lato, sans-serif;
+}
+
+body {
+  overflow: hidden;
+  min-width: 1349.9px;
+  min-height: 528px;
+  margin: 0;
+  background: #4ECDC4;
+  background: -webkit-linear-gradient(to right, #4ECDC4, #556270);
+  background: linear-gradient(to right, #4ECDC4, #556270);
+  color: white;
+}
+
+.title {
+  text-align: center;
+  font-size: 40px;
+  margin-top: 25px;
+}
+
+.start {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  background: #E6DADA;
+  background: -webkit-linear-gradient(to right, #274046, #E6DADA);
+  background: linear-gradient(to right, #274046, #E6DADA);
+  margin: 400px auto 0 auto;
+  border-radius: 5px;
+  text-align: center;
+  width: 120px;
+  padding: 10px;
+  cursor: pointer;
+  &:hover {
+    background: #274046;
+    background: -webkit-linear-gradient(to right, #E6DADA, #274046);
+    background: linear-gradient(to right, #E6DADA, #274046);
+  }
+}
+
+.button {
+  @extend .start;
+  margin: 100px auto 0 auto;
+  height: 50px;
+  line-height: 50px;
+  width: 50px;
+  border-radius: 70px;
+  &.bot {
+    position: absolute;
+    bottom: 100px;
+    right: 0;
+    left: 0;
+  }
+}
+
+.card {
+  color: black;
+  position: relative;
+  margin: 5px;
+  border-radius: 5px;
+  padding: 5px;
+  display: inline-block;
+  background: white;
+  width: 70px;
+  height: 110px;
+  box-sizing: border-box;
+  .number{
+    position: absolute;
+  }
+  .icon {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: block;
+    width: 40px;
+    height: 40px;
+    margin: auto;
+  }
+  &.empty {
+    background: none !important;
+    border: 1px solid white;
+    .icon {
+      display: none;
+    }
+    .number {
+      display: none;
+    }
+  }
+  &.back {
+    background: #360033;  /* fallback for old browsers */
+    background: -webkit-linear-gradient(to right, #0b8793, #360033);  /* Chrome 10-25, Safari 5.1-6 */
+    background: linear-gradient(to right, #0b8793, #360033); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+    .icon {
+      display: none;
+    }
+    .number {
+      display: none;
+    }
+  }
+}
+
+.box {
+  height: calc(100vh - 276px);
+  width: calc(100% - 286px);
+  margin-top: 138px;
+  margin-left: 142px;
+}
+
+.bottom {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  height: 130px;
+  width: 100%;
+}
+
+.top {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 130px;
+  width: 100%;
+}
+
+.right {
+  position: fixed;
+  right: 0;
+  top: 130px;
+  height: calc(100vh - 260px);;
+  width: 100px;
+}
+
+.left {
+  position: fixed;
+  left: 0;
+  top: 130px;
+  height: calc(100vh - 260px);;
+  width: 100px;
+}
+
+.hand {
+  margin: auto;
+  width: fit-content;
+}
+
+.group {
+  color: black;
+  position: absolute;
+  margin: 20px 5px 5px 20px;
+  border-radius: 5px;
+  padding: 5px;
+  display: inline-block;
+  border: 1px solid white;
+  width: 70px;
+  height: 110px;
+  &.bot {
+    right: 10px;
+    margin: 5px;
+  }
+  &.gr-left {
+    position: relative;
+  }
+  &.gr-left-bot {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+  }
+  .number {
+    position: absolute;
+    right: -8px;
+    top: -6px;
+    width: 16px;
+    height: 16px;
+    font-size: 12px;
+    text-align: center;
+    border-radius: 10px;
+    display: block;
+    background: white;
+  }
+  &.not_empty {
+    background: #360033;  /* fallback for old browsers */
+    background: -webkit-linear-gradient(to right, #0b8793, #360033);  /* Chrome 10-25, Safari 5.1-6 */
+    background: linear-gradient(to right, #0b8793, #360033); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+    border: none;
+  }
+}
