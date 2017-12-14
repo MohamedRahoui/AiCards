@@ -3,15 +3,18 @@
     <div class="top">
       <group position="top" :number="comp_won.length"></group>
       <div class="hand">
-        <card v-for="(card, index) in empty_comp_hand" :key="index" :icon="card.icon" :number="card.number" type="back"></card>
+        <card v-for="(card, index) in empty_comp_hand" :key="index" :icon="card.icon" :number="card.number"
+              type="back" :id="card.id"></card>
       </div>
     </div>
     <div class="right" v-if="this.current_player === 'human'">
-      <div class="button">Pick</div>
-      <div class="button bot">Drop</div>
+      <div class="button" :class="{'disabled': !can_pick}">Pick</div>
+      <div class="button bot" :class="{'disabled': !can_put}">Drop</div>
     </div>
     <div class="box">
-      <card v-for="(card, index) in empty_box" :key="index" :icon="card.icon" :number="card.number"></card>
+      <card v-for="(card, index) in empty_box" :key="index" :icon="card.icon" :number="card.number"
+            :selectable="isHuman" where="box" @card-selected="handle_card_selection"
+            @card-unselected="handle_card_unselection" :id="card.id"></card>
     </div>
     <div class="left">
       <group position="gr-left" :number="start_cards.length"></group>
@@ -20,7 +23,9 @@
     <div class="bottom">
       <group position="bot"></group>
       <div class="hand">
-        <card v-for="(card, index) in empty_player_hand" :key="index" :icon="card.icon" :number="card.number"></card>
+        <card v-for="(card, index) in empty_player_hand" :key="index" :icon="card.icon" :number="card.number"
+              :selectable="isHuman" where="hand" @card-selected="handle_card_selection"
+              @card-unselected="handle_card_unselection" :id="card.id"></card>
       </div>
     </div>
   </div>
@@ -142,10 +147,63 @@
         empty_player_hand: [],
         empty_comp_hand: [],
         comp_won: [],
-        player_won: []
+        player_won: [],
+        hand_selected: {},
+        box_selected: []
+      }
+    },
+    computed: {
+      isHuman() {
+        return this.current_player === 'human'
+      },
+      can_put() {
+        return this.hand_selected.number
+      },
+      can_pick() {
+        if (this.hand_selected.number && this.box_selected.length > 0) {
+          let total = 0
+          this.box_selected.forEach(card => {
+            total += card.number
+          })
+          return total === this.hand_selected.number
+        } else {
+          return false
+        }
       }
     },
     methods: {
+      handle_card_selection(card) {
+        if (card.is_selectable && card.number) {
+
+          // Hand cards
+          if (card.where === 'hand') {
+            if (this.hand_selected.number) {
+              this.hand_selected.is_selected = false
+              this.hand_selected = card
+            } else {
+              this.hand_selected = card
+            }
+          }
+
+          if (card.where === 'box') {
+            this.box_selected.push(card)
+          }
+        }
+      },
+      handle_card_unselection(card) {
+        if (card.where === 'hand') {
+          if (this.hand_selected.number) {
+            this.hand_selected.is_selected = false
+            this.hand_selected = {}
+          }
+        }
+        if (card.where === 'box') {
+          this.box_selected = $.grep(this.box_selected, (e) => {
+            return e.id !== card.id;
+          });
+          console.log(card);
+        }
+      },
       get_best_combination() {
         let combinations = []
         let sum = (cards) => {
