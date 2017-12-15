@@ -32,6 +32,9 @@
     watch: {
       number() {
         this.is_selected = false
+      },
+      icon() {
+        this.is_selected = false
       }
     },
     methods: {

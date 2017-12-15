@@ -149,7 +149,9 @@
         comp_won: [],
         player_won: [],
         hand_selected: {},
-        box_selected: []
+        box_selected: [],
+        last_picker: '',
+        game_ended: false
       }
     },
     computed: {
@@ -176,6 +178,7 @@
     },
     methods: {
       the_end() {
+        console.log('Ended Game');
         let winner = ''
         if (this.player_won.length > this.comp_won.length) {
           winner = 'You'
@@ -214,6 +217,27 @@
                 this.player_deck[index]);
               this.player_deck.splice(index, 1);
             }
+          } else if (this.start_cards.length === 0 && this.player_deck.length === 0 && this.box_cards.length > 0) {
+            if (this.last_picker === 'ai') {
+              this.box_cards.forEach(card => {
+                this.comp_won.push(card)
+                this.empty_box = $.grep(this.empty_box, (e) => {
+                  return e.id !== card.id;
+                });
+                this.empty_box.push({type: 'empty'})
+              })
+            }
+            if (this.last_picker === 'human') {
+              this.box_cards.forEach(card => {
+                this.player_won.push(card)
+                this.empty_box = $.grep(this.empty_box, (e) => {
+                  return e.id !== card.id;
+                });
+                this.empty_box.push({type: 'empty'})
+              })
+            }
+            this.the_end()
+            this.game_ended = true
           }
         }
       },
@@ -327,6 +351,7 @@
           this.comp_hand = $.grep(this.comp_hand, (e) => {
             return e.id !== best_comb.card.id;
           });
+          this.last_picker = 'ai'
         } else {
           let get_min_in_hand = () => {
             let min = {}
@@ -356,24 +381,15 @@
           this.empty_comp_hand.push({type: 'empty'})
         }
         if (this.both_hands_empty) {
-          if (this.start_cards.length === 0 && this.player_deck.length === 0 && this.box_cards.length > 0) {
-            this.box_cards.forEach(card => {
-              this.comp_won.push(card)
-              this.empty_box = $.grep(this.empty_box, (e) => {
-                return e.id !== card.id;
-              });
-              this.empty_box.push({type: 'empty'})
-              this.the_end()
-            })
-          } else {
-            this.distribute_cards()
-          }
+          this.distribute_cards()
         }
-        swal({
-          title: 'Ai Played, your turn now',
-        }).then(() => {
-          this.current_player = "human"
-        })
+        if (!this.game_ended) {
+          swal({
+            title: 'Ai Played, your turn now',
+          }).then(() => {
+            this.current_player = "human"
+          })
+        }
       },
 
       /*
@@ -400,7 +416,9 @@
           if (this.both_hands_empty) {
             this.distribute_cards()
           }
-          this.get_best_combination()
+          if (!this.game_ended) {
+            this.get_best_combination()
+          }
         }
       },
 
@@ -432,20 +450,12 @@
           this.hand_selected = {}
           this.current_player = "ai"
           if (this.both_hands_empty) {
-            if (this.start_cards.length === 0 && this.player_deck.length === 0 && this.box_cards.length > 0) {
-              this.box_cards.forEach(card => {
-                this.player_won.push(card)
-                this.empty_box = $.grep(this.empty_box, (e) => {
-                  return e.id !== card.id;
-                });
-                this.empty_box.push({type: 'empty'})
-                this.the_end()
-              })
-            } else {
-              this.distribute_cards()
-            }
+            this.distribute_cards()
           }
-          this.get_best_combination()
+          this.last_picker = 'human'
+          if (!this.game_ended) {
+            this.get_best_combination()
+          }
         }
       }
 
