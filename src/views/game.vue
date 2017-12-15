@@ -8,8 +8,8 @@
       </div>
     </div>
     <div class="right" v-if="this.current_player === 'human'">
-      <div class="button" :class="{'disabled': !can_pick}">Pick</div>
-      <div class="button bot" :class="{'disabled': !can_put}">Drop</div>
+      <div class="button" :class="{'disabled': !can_pick}" @click="pick_from_table">Pick</div>
+      <div class="button bot" :class="{'disabled': !can_put}" @click="put_from_hand">Drop</div>
     </div>
     <div class="box">
       <card v-for="(card, index) in empty_box" :key="index" :icon="card.icon" :number="card.number"
@@ -21,7 +21,7 @@
       <group position="gr-left-bot" :number="player_deck.length"></group>
     </div>
     <div class="bottom">
-      <group position="bot"></group>
+      <group position="bot" :number="player_won.length"></group>
       <div class="hand">
         <card v-for="(card, index) in empty_player_hand" :key="index" :icon="card.icon" :number="card.number"
               :selectable="isHuman" where="hand" @card-selected="handle_card_selection"
@@ -157,7 +157,7 @@
         return this.current_player === 'human'
       },
       can_put() {
-        return this.hand_selected.number
+        return this.hand_selected.number && !this.can_pick
       },
       can_pick() {
         if (this.hand_selected.number && this.box_selected.length > 0) {
@@ -169,9 +169,54 @@
         } else {
           return false
         }
+      },
+      both_hands_empty() {
+        return this.comp_hand.length === 0 && this.player_hand.length === 0
       }
     },
     methods: {
+      the_end() {
+        let winner = ''
+        if (this.player_won.length > this.comp_won.length) {
+          winner = 'You'
+        } else {
+          winner = 'Ai'
+        }
+        swal({
+          title: 'The winner is ' + winner,
+          html: 'Your score: ' + this.player_won.length + ' <br> ' +
+          'Ai score: ' + this.comp_won.length
+        }).then(() => {
+          this.$router.push({name: 'main'})
+        })
+      },
+      distribute_cards() {
+        if (this.both_hands_empty) {
+          if (this.start_cards.length > 0 && this.player_deck.length > 0) {
+            // give to ai
+            for (let i = 0; i < 3; i++) {
+              let index = Math.floor(Math.random() * this.start_cards.length);
+              this.comp_hand.push(
+                this.start_cards[index]);
+
+              this.empty_comp_hand.pop()
+              this.empty_comp_hand.unshift(
+                this.start_cards[index]);
+              this.start_cards.splice(index, 1);
+            }
+            //  give to player
+            for (let i = 0; i < 3; i++) {
+              let index = Math.floor(Math.random() * this.player_deck.length);
+              this.player_hand.push(
+                this.player_deck[index]);
+              this.empty_player_hand.pop()
+              this.empty_player_hand.unshift(
+                this.player_deck[index]);
+              this.player_deck.splice(index, 1);
+            }
+          }
+        }
+      },
       handle_card_selection(card) {
         if (card.is_selectable && card.number) {
 
@@ -201,9 +246,12 @@
           this.box_selected = $.grep(this.box_selected, (e) => {
             return e.id !== card.id;
           });
-          console.log(card);
         }
       },
+
+      /*
+        Ai Playing
+       */
       get_best_combination() {
         let combinations = []
         let sum = (cards) => {
@@ -307,7 +355,100 @@
           });
           this.empty_comp_hand.push({type: 'empty'})
         }
+        if (this.both_hands_empty) {
+          if (this.start_cards.length === 0 && this.player_deck.length === 0 && this.box_cards.length > 0) {
+            this.box_cards.forEach(card => {
+              this.comp_won.push(card)
+              this.empty_box = $.grep(this.empty_box, (e) => {
+                return e.id !== card.id;
+              });
+              this.empty_box.push({type: 'empty'})
+              this.the_end()
+            })
+          } else {
+            this.distribute_cards()
+          }
+        }
+        swal({
+          title: 'Ai Played, your turn now',
+        }).then(() => {
+          this.current_player = "human"
+        })
+      },
+
+      /*
+      Human playing
+       */
+      // Put
+      put_from_hand() {
+        if (this.can_put) {
+          let card_to_put = {};
+          Object.assign(card_to_put, this.hand_selected._props)
+          this.player_hand = $.grep(this.player_hand, (e) => {
+            return e.id !== card_to_put.id;
+          });
+          this.empty_player_hand = $.grep(this.empty_player_hand, (e) => {
+            return e.id !== card_to_put.id;
+          });
+          this.empty_player_hand.push({type: 'empty'})
+          this.box_cards.push(card_to_put)
+          this.empty_box.pop()
+          this.empty_box.unshift(card_to_put)
+          this.box_selected = []
+          this.hand_selected = {}
+          this.current_player = "ai"
+          if (this.both_hands_empty) {
+            this.distribute_cards()
+          }
+          this.get_best_combination()
+        }
+      },
+
+      pick_from_table() {
+        if (this.can_pick) {
+          //delete from hand
+          let card_to_pick = {};
+          Object.assign(card_to_pick, this.hand_selected._props)
+          this.player_hand = $.grep(this.player_hand, (e) => {
+            return e.id !== card_to_pick.id;
+          });
+          this.empty_player_hand = $.grep(this.empty_player_hand, (e) => {
+            return e.id !== card_to_pick.id;
+          });
+          this.empty_player_hand.push({type: 'empty'})
+          this.player_won.push(card_to_pick)
+          //delete from table
+          this.box_selected.forEach(card => {
+            this.box_cards = $.grep(this.box_cards, (e) => {
+              return e.id !== card.id;
+            });
+            this.empty_box = $.grep(this.empty_box, (e) => {
+              return e.id !== card.id;
+            });
+            this.empty_box.push({type: 'empty'})
+            this.player_won.push(card)
+          })
+          this.box_selected = []
+          this.hand_selected = {}
+          this.current_player = "ai"
+          if (this.both_hands_empty) {
+            if (this.start_cards.length === 0 && this.player_deck.length === 0 && this.box_cards.length > 0) {
+              this.box_cards.forEach(card => {
+                this.player_won.push(card)
+                this.empty_box = $.grep(this.empty_box, (e) => {
+                  return e.id !== card.id;
+                });
+                this.empty_box.push({type: 'empty'})
+                this.the_end()
+              })
+            } else {
+              this.distribute_cards()
+            }
+          }
+          this.get_best_combination()
+        }
       }
+
     }
   }
 </script>

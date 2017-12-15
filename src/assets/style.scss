@@ -98,6 +98,10 @@ body {
   &.empty {
     background: none !important;
     border: 1px solid white;
+    cursor: not-allowed !important;
+    &:hover{
+      box-shadow: none !important;
+    }
     .icon {
       display: none;
     }

@@ -2,8 +2,8 @@
   <div class="card noselect" :class="[
       {'empty': is_empty},
       type_comp,
-      {'selectable': is_selectable},
-      {'selected': is_selected},
+      {'selectable': is_selectable && !is_empty},
+      {'selected': is_selected && !is_empty},
     ]" @click="selected">
     <div class="number" v-if="number">{{number}}</div>
     <img v-if="icon" :src="'/static/' + icon +'.svg'" class="icon">
@@ -29,9 +29,14 @@
         return this.selectable
       },
     },
+    watch: {
+      number() {
+        this.is_selected = false
+      }
+    },
     methods: {
       selected() {
-        if (this.number) {
+        if (!this.is_empty) {
           if (!this.is_selected) {
             this.$emit('card-selected', this)
             this.is_selected = true
@@ -39,8 +44,6 @@
             this.$emit('card-unselected', this)
             this.is_selected = false
           }
-        } else {
-          this.is_selectable = false
         }
       }
     }
