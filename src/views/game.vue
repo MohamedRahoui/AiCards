@@ -4,7 +4,7 @@
       <group position="top" :number="comp_won.length"></group>
       <div class="hand">
         <card v-for="(card, index) in empty_comp_hand" :key="index" :icon="card.icon" :number="card.number"
-              type="back" :id="card.id"></card>
+              type="" :id="card.id"></card>
       </div>
     </div>
     <div class="right" v-if="this.current_player === 'human'">
@@ -128,7 +128,7 @@
         swal({
           title: 'Ai start',
         }).then(() => {
-          this.get_best_combination()
+          this.ai_play()
         })
       }
 
@@ -151,7 +151,8 @@
         hand_selected: {},
         box_selected: [],
         last_picker: '',
-        game_ended: false
+        game_ended: false,
+        level: ''
       }
     },
     computed: {
@@ -177,21 +178,39 @@
       }
     },
     methods: {
-      the_end() {
-        console.log('Ended Game');
-        let winner = ''
-        if (this.player_won.length > this.comp_won.length) {
-          winner = 'You'
-        } else {
-          winner = 'Ai'
+      /*
+      global
+      */
+      handle_card_selection(card) {
+        if (card.is_selectable && card.number) {
+
+          // Hand cards
+          if (card.where === 'hand') {
+            if (this.hand_selected.number) {
+              this.hand_selected.is_selected = false
+              this.hand_selected = card
+            } else {
+              this.hand_selected = card
+            }
+          }
+
+          if (card.where === 'box') {
+            this.box_selected.push(card)
+          }
         }
-        swal({
-          title: 'The winner is ' + winner,
-          html: 'Your score: ' + this.player_won.length + ' <br> ' +
-          'Ai score: ' + this.comp_won.length
-        }).then(() => {
-          this.$router.push({name: 'main'})
-        })
+      },
+      handle_card_unselection(card) {
+        if (card.where === 'hand') {
+          if (this.hand_selected.number) {
+            this.hand_selected.is_selected = false
+            this.hand_selected = {}
+          }
+        }
+        if (card.where === 'box') {
+          this.box_selected = $.grep(this.box_selected, (e) => {
+            return e.id !== card.id;
+          });
+        }
       },
       distribute_cards() {
         if (this.both_hands_empty) {
@@ -241,42 +260,7 @@
           }
         }
       },
-      handle_card_selection(card) {
-        if (card.is_selectable && card.number) {
-
-          // Hand cards
-          if (card.where === 'hand') {
-            if (this.hand_selected.number) {
-              this.hand_selected.is_selected = false
-              this.hand_selected = card
-            } else {
-              this.hand_selected = card
-            }
-          }
-
-          if (card.where === 'box') {
-            this.box_selected.push(card)
-          }
-        }
-      },
-      handle_card_unselection(card) {
-        if (card.where === 'hand') {
-          if (this.hand_selected.number) {
-            this.hand_selected.is_selected = false
-            this.hand_selected = {}
-          }
-        }
-        if (card.where === 'box') {
-          this.box_selected = $.grep(this.box_selected, (e) => {
-            return e.id !== card.id;
-          });
-        }
-      },
-
-      /*
-        Ai Playing
-       */
-      get_best_combination() {
+      get_hard_comb() {
         let combinations = []
         let sum = (cards) => {
           let total = 0;
@@ -309,23 +293,70 @@
         this.comp_hand.forEach(card => {
           combinations.push(findCombs(this.box_cards, card))
         })
-
-        let get_max_length = combinations => {
-          let max = {}
-          combinations.forEach(combination => {
-            if (combination.length > 0) {
-              combination.forEach(comb => {
-                if (!max.numberSet) {
-                  max = comb
-                } else if (max.numberSet.length < comb.numberSet.length) {
-                  max = comb
-                }
-              })
+        let max = {}
+        combinations.forEach(combination => {
+          if (combination.length > 0) {
+            combination.forEach(comb => {
+              if (!max.numberSet) {
+                max = comb
+              } else if (max.numberSet.length < comb.numberSet.length) {
+                max = comb
+              }
+            })
+          }
+        })
+        return max
+      },
+      get_easy_comb() {
+        let equals;
+        this.comp_hand.forEach(hand_card => {
+          this.box_cards.forEach(box_card => {
+            if (hand_card.number === box_card.number) {
+              equals = {'card': hand_card, 'numberSet': [card]}
             }
           })
-          return max
+        })
+        return equals
+      },
+      get_hard_put() {
+        let min = {}
+        this.comp_hand.forEach(card => {
+          if (!min.number) {
+            min = card
+          } else if (min.number > card.number) {
+            min = card
+          }
+        })
+        return min
+      },
+      get_easy_put() {
+        let max = {}
+        this.comp_hand.forEach(card => {
+          if (!max.number) {
+            max = card
+          } else if (max.number < card.number) {
+            max = card
+          }
+        })
+        return max
+      },
+      get_medium_put() {
+        return this.comp_hand[Math.floor(Math.random() * this.comp_hand.length)];
+      },
+      /*
+        Ai Playing
+       */
+      ai_play() {
+        let best_comb
+        if (this.level === 'hard') {
+          best_comb = this.get_hard_comb()
         }
-        let best_comb = get_max_length(combinations)
+        if (this.level === 'easy') {
+          best_comb = this.get_easy_comb()
+        }
+        if (this.level === 'medium') {
+          best_comb = this.get_hard_comb()
+        }
         if (best_comb.card) {
           // Add to won
           this.comp_won.push(best_comb.card)
@@ -353,18 +384,16 @@
           });
           this.last_picker = 'ai'
         } else {
-          let get_min_in_hand = () => {
-            let min = {}
-            this.comp_hand.forEach(card => {
-              if (!min.number) {
-                min = card
-              } else if (min.number > card.number) {
-                min = card
-              }
-            })
-            return min
+          let minimum;
+          if (this.level === 'hard') {
+            minimum = this.get_hard_put()
           }
-          let minimum = get_min_in_hand()
+          if (this.level === 'easy') {
+            minimum = this.get_easy_put()
+          }
+          if (this.level === 'medium') {
+            minimum = this.get_medium_put()
+          }
 
           //Insert in box
           this.box_cards.push(minimum)
@@ -417,7 +446,7 @@
             this.distribute_cards()
           }
           if (!this.game_ended) {
-            this.get_best_combination()
+            this.ai_play()
           }
         }
       },
@@ -454,11 +483,27 @@
           }
           this.last_picker = 'human'
           if (!this.game_ended) {
-            this.get_best_combination()
+            this.ai_play()
           }
         }
-      }
+      },
 
+      // Game Ended
+      the_end() {
+        let winner = ''
+        if (this.player_won.length > this.comp_won.length) {
+          winner = 'You'
+        } else {
+          winner = 'Ai'
+        }
+        swal({
+          title: 'The winner is ' + winner,
+          html: 'Your score: ' + this.player_won.length + ' <br> ' +
+          'Ai score: ' + this.comp_won.length
+        }).then(() => {
+          this.$router.push({name: 'main'})
+        })
+      },
     }
   }
 </script>
